@@ -5,11 +5,10 @@ from textblob import TextBlob
 
 app = FastAPI()
 
-# Enable CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -23,7 +22,8 @@ HAPPY_WORDS = {
     "beautiful", "perfect", "brilliant", "superb", "delightful", "glad",
     "enjoy", "enjoyed", "fun", "incredible", "grateful", "thankful",
     "pleased", "cheerful", "outstanding", "terrific", "yay", "hooray",
-    "smile", "laugh", "positive", "nice", "good", "like", "liked"
+    "smile", "laugh", "positive", "nice", "good", "like", "liked",
+    "success", "successful", "win", "winning"
 }
 
 SAD_WORDS = {
@@ -34,46 +34,39 @@ SAD_WORDS = {
     "poor", "useless", "broken", "hurt", "pain", "problem", "issue",
     "suffering", "regret", "sorry", "waste", "pathetic", "disaster",
     "ugly", "boring", "dull", "tired", "exhausted", "tragic",
-    "devastated", "hopeless", "helpless", "furious", "negative", "sucks"
+    "devastated", "hopeless", "helpless", "furious", "negative",
+    "sucks", "cannot", "can't", "never", "nothing", "wrong"
 }
 
 def get_sentiment(text: str) -> str:
-    lower = text.lower()
+    text = text.lower()
 
-    words = set(
-        lower.replace(".", "")
-             .replace(",", "")
-             .replace("!", "")
-             .replace("?", "")
-             .split()
-    )
-
-    happy_score = len(words & HAPPY_WORDS)
-    sad_score = len(words & SAD_WORDS)
-
-    if happy_score > sad_score:
-        return "happy"
+    happy_score = sum(word in text for word in HAPPY_WORDS)
+    sad_score = sum(word in text for word in SAD_WORDS)
 
     if sad_score > happy_score:
         return "sad"
 
+    if happy_score > sad_score:
+        return "happy"
+
     polarity = TextBlob(text).sentiment.polarity
 
-    if polarity >= 0.35:
+    if polarity > 0.45:
         return "happy"
-    elif polarity <= -0.15:
+    elif polarity < -0.30:
         return "sad"
     else:
         return "neutral"
 
 @app.post("/sentiment")
 def sentiment_analysis(data: Sentences):
-    results = []
-
-    for sentence in data.sentences:
-        results.append({
-            "sentence": sentence,
-            "sentiment": get_sentiment(sentence)
-        })
-
-    return {"results": results}
+    return {
+        "results": [
+            {
+                "sentence": sentence,
+                "sentiment": get_sentiment(sentence)
+            }
+            for sentence in data.sentences
+        ]
+    }
