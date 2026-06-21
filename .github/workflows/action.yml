@@ -1,0 +1,15 @@
+name: IITM GitHub Action
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 23f1000746@ds.study.iitm.ac.in
+        run: echo "Hello, IITM!"
