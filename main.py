@@ -17,24 +17,56 @@ app.add_middleware(
 class Sentences(BaseModel):
     sentences: list[str]
 
-class ResultItem(BaseModel):
-    sentence: str
-    sentiment: str
+HAPPY_WORDS = {
+    "love", "loved", "loving", "great", "excellent", "amazing", "awesome",
+    "fantastic", "wonderful", "happy", "joy", "joyful", "excited", "best",
+    "beautiful", "perfect", "brilliant", "superb", "delightful", "glad",
+    "enjoy", "enjoyed", "fun", "incredible", "grateful", "thankful",
+    "pleased", "cheerful", "outstanding", "terrific", "yay", "hooray",
+    "smile", "laugh", "positive", "nice", "good", "like", "liked"
+}
 
-class Result(BaseModel):
-    results: list[ResultItem]
+SAD_WORDS = {
+    "hate", "hated", "terrible", "awful", "horrible", "bad", "worst",
+    "sad", "disappointed", "disappointing", "upset", "angry",
+    "frustrated", "annoyed", "miserable", "depressed", "cry", "crying",
+    "dreadful", "disgusting", "dislike", "failed", "fail", "failure",
+    "poor", "useless", "broken", "hurt", "pain", "problem", "issue",
+    "suffering", "regret", "sorry", "waste", "pathetic", "disaster",
+    "ugly", "boring", "dull", "tired", "exhausted", "tragic",
+    "devastated", "hopeless", "helpless", "furious", "negative", "sucks"
+}
 
-def get_sentiment(text: str):
+def get_sentiment(text: str) -> str:
+    lower = text.lower()
+
+    words = set(
+        lower.replace(".", "")
+             .replace(",", "")
+             .replace("!", "")
+             .replace("?", "")
+             .split()
+    )
+
+    happy_score = len(words & HAPPY_WORDS)
+    sad_score = len(words & SAD_WORDS)
+
+    if happy_score > sad_score:
+        return "happy"
+
+    if sad_score > happy_score:
+        return "sad"
+
     polarity = TextBlob(text).sentiment.polarity
 
-    if polarity > 0.1:
+    if polarity >= 0.35:
         return "happy"
-    elif polarity < -0.1:
+    elif polarity <= -0.15:
         return "sad"
     else:
         return "neutral"
 
-@app.post("/sentiment", response_model=Result)
+@app.post("/sentiment")
 def sentiment_analysis(data: Sentences):
     results = []
 
